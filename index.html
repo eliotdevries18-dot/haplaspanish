@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HablaSA | Fluency 2027</title>
+    <title>HablaSA | Audio Edition</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -13,18 +13,30 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
         .chile-gradient { background: linear-gradient(135deg, #0039a6 0%, #d52b1e 100%); }
-        .card-active { transform: scale(0.98); opacity: 0.9; }
+        .active-scale { transform: scale(0.95); }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState } = React;
+        const { useState, useEffect } = React;
 
         const App = () => {
             const [tab, setTab] = useState('home');
             const [xp, setXp] = useState(0);
             const [showBack, setShowBack] = useState(false);
+
+            // --- AUDIO FUNCTION ---
+            const speak = (text) => {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'es-CL'; // Targets Chilean Spanish
+                // Fallback for devices without Chilean specific voice
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoice = voices.find(v => v.lang.includes('es-CL')) || voices.find(v => v.lang.includes('es'));
+                if (preferredVoice) utterance.voice = preferredVoice;
+                
+                window.speechSynthesis.speak(utterance);
+            };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl relative">
@@ -46,24 +58,34 @@
                                     <div className="w-full bg-slate-800 rounded-full h-2 mb-2">
                                         <div className="bg-blue-500 h-2 rounded-full" style={{width: `${Math.min(xp/10, 100)}%`}}></div>
                                     </div>
-                                    <p className="text-xs text-slate-400 font-medium">Stage: Foundation (Chilean Basics)</p>
+                                    <p className="text-xs text-slate-400 font-medium">Listening: <span className="text-green-400 font-bold underline">Enabled 🔊</span></p>
                                 </div>
 
                                 <div className="grid gap-4">
-                                    <h3 className="font-bold text-slate-800">Today's Missions</h3>
-                                    <div onClick={() => setTab('cards')} className="p-4 border rounded-2xl flex items-center space-x-4 cursor-pointer active:card-active">
-                                        <div className="text-2xl">🇨🇱</div>
+                                    <h3 className="font-bold text-slate-800">Daily Missions</h3>
+                                    <button onClick={() => setTab('cards')} className="w-full p-4 border rounded-2xl flex items-center space-x-4 active:bg-slate-50 text-left">
+                                        <div className="text-2xl">🔊</div>
                                         <div>
-                                            <h4 className="font-bold">Chilean Slang</h4>
-                                            <p className="text-xs text-slate-500">Master "Cachai" and "Al tiro"</p>
+                                            <h4 className="font-bold">Pronunciation Practice</h4>
+                                            <p className="text-xs text-slate-500">Listen and repeat Chilean modismos</p>
                                         </div>
-                                    </div>
+                                    </button>
                                 </div>
                             </div>
                         )}
 
                         {tab === 'cards' && (
                             <div className="flex flex-col h-full space-y-6 text-center">
+                                <div className="flex justify-center">
+                                    <button 
+                                        onClick={() => speak("¿Cachai?")}
+                                        className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-bold flex items-center space-x-2 active:active-scale"
+                                    >
+                                        <i className="fas fa-volume-up"></i>
+                                        <span>Listen to Pronunciation</span>
+                                    </button>
+                                </div>
+
                                 <div 
                                     onClick={() => setShowBack(!showBack)}
                                     className={`w-full aspect-[4/5] rounded-[2.5rem] p-10 flex flex-col items-center justify-center shadow-2xl transition-all duration-500 ${showBack ? 'bg-blue-600 text-white' : 'bg-white border-4 border-slate-50 text-slate-800'}`}
@@ -73,23 +95,31 @@
                                     ) : (
                                         <>
                                             <h3 className="text-3xl font-bold mb-2 text-blue-200">Meaning</h3>
-                                            <p className="text-2xl">"You know?" / "Understand?"</p>
-                                            <p className="mt-6 text-sm opacity-80 italic">Commonly used at the end of every sentence in Chile.</p>
+                                            <p className="text-2xl">"You know?"</p>
+                                            <button 
+                                                onClick={(e) => { e.stopPropagation(); speak("Es súper difícil, ¿cachai?"); }}
+                                                className="mt-6 text-xs bg-blue-500/30 p-2 rounded-lg italic underline"
+                                            >
+                                                🔊 Example: "Es súper difícil, ¿cachai?"
+                                            </button>
                                         </>
                                     )}
                                 </div>
-                                <button onClick={() => {setXp(xp + 10); setShowBack(false)}} className="bg-green-500 text-white py-4 rounded-2xl font-bold shadow-lg">I learned this (+10 XP)</button>
+                                <button onClick={() => {setXp(xp + 10); setShowBack(false)}} className="bg-green-500 text-white py-4 rounded-2xl font-bold shadow-lg">Next Card</button>
                             </div>
                         )}
 
                         {tab === 'chat' && (
                             <div className="flex flex-col h-full space-y-4">
-                                <div className="bg-slate-100 p-4 rounded-2xl rounded-bl-none text-sm text-slate-700">
-                                    <b>Valentina 🇨🇱:</b> ¡Hola! ¿Cómo estai? Soy tu profe chilena. ¿Quieres practicar modismos hoy?
+                                <div className="bg-slate-100 p-4 rounded-2xl rounded-bl-none text-sm text-slate-700 relative">
+                                    <b>Valentina 🇨🇱:</b> ¡Hola! ¿Cómo estai? Soy tu profe chilena.
+                                    <button onClick={() => speak("¡Hola! ¿Cómo estai? Soy tu profe chilena.")} className="absolute -top-2 -right-2 bg-white shadow-md w-8 h-8 rounded-full text-blue-500 flex items-center justify-center">
+                                        <i className="fas fa-volume-up text-xs"></i>
+                                    </button>
                                 </div>
                                 <div className="flex-1"></div>
-                                <div className="flex space-x-2">
-                                    <input placeholder="Type in Spanish..." className="flex-1 border p-4 rounded-2xl outline-none" />
+                                <div className="flex space-x-2 p-2">
+                                    <input placeholder="Type here..." className="flex-1 border p-4 rounded-2xl outline-none" />
                                     <button className="bg-blue-600 text-white px-6 rounded-2xl"><i className="fas fa-paper-plane"></i></button>
                                 </div>
                             </div>
@@ -99,15 +129,15 @@
                     <nav className="fixed bottom-0 w-full max-w-md bg-white border-t flex justify-around items-center h-20 pb-4">
                         <button onClick={() => setTab('home')} className={`flex flex-col items-center ${tab === 'home' ? 'text-blue-600' : 'text-slate-400'}`}>
                             <i className="fas fa-home text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1">HOME</span>
+                            <span className="text-[10px] font-bold mt-1 uppercase">Home</span>
                         </button>
                         <button onClick={() => setTab('cards')} className={`flex flex-col items-center ${tab === 'cards' ? 'text-blue-600' : 'text-slate-400'}`}>
                             <i className="fas fa-clone text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1">CARDS</span>
+                            <span className="text-[10px] font-bold mt-1 uppercase">Practice</span>
                         </button>
                         <button onClick={() => setTab('chat')} className={`flex flex-col items-center ${tab === 'chat' ? 'text-blue-600' : 'text-slate-400'}`}>
                             <i className="fas fa-comment-dots text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1">TUTOR</span>
+                            <span className="text-[10px] font-bold mt-1 uppercase">Tutor</span>
                         </button>
                     </nav>
                 </div>
