@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HablaSA | Audio Edition</title>
+    <title>HablaSA | AI Tutor</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -11,133 +11,103 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         .chile-gradient { background: linear-gradient(135deg, #0039a6 0%, #d52b1e 100%); }
-        .active-scale { transform: scale(0.95); }
+        .chat-bubble-ai { background: #f1f5f9; border-radius: 20px 20px 20px 4px; }
+        .chat-bubble-user { background: #0039a6; color: white; border-radius: 20px 20px 4px 20px; }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         const App = () => {
-            const [tab, setTab] = useState('home');
-            const [xp, setXp] = useState(0);
-            const [showBack, setShowBack] = useState(false);
+            const [tab, setTab] = useState('chat');
+            const [input, setInput] = useState('');
+            const [messages, setMessages] = useState([
+                { role: 'ai', text: "¡Hola! I'm Valentina. I know 'every word' in Chile. Type a word like 'Bacán' or ask me 'How do I say...?'" }
+            ]);
 
-            // --- AUDIO FUNCTION ---
             const speak = (text) => {
                 const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'es-CL'; // Targets Chilean Spanish
-                // Fallback for devices without Chilean specific voice
-                const voices = window.speechSynthesis.getVoices();
-                const preferredVoice = voices.find(v => v.lang.includes('es-CL')) || voices.find(v => v.lang.includes('es'));
-                if (preferredVoice) utterance.voice = preferredVoice;
-                
+                utterance.lang = 'es-CL';
                 window.speechSynthesis.speak(utterance);
+            };
+
+            const handleSend = () => {
+                if (!input.trim()) return;
+                const userMsg = input.toLowerCase();
+                const newMessages = [...messages, { role: 'user', text: input }];
+                setMessages(newMessages);
+                setInput('');
+
+                // --- SMART AI LOGIC ---
+                setTimeout(() => {
+                    let response = "I'm still learning that one! But try asking me about 'Cachai' or 'Food'.";
+                    
+                    if (userMsg.includes("cachai")) {
+                        response = "¡Bacán! 'Cachai' is our way of saying 'You know?'. We use it at the end of almost every sentence. Example: 'Está nublado, ¿cachai?' (It's cloudy, you know?)";
+                    } else if (userMsg.includes("food") || userMsg.includes("hambre")) {
+                        response = "Hungry? In Chile, we love 'Completos' (hot dogs) and 'Empanadas'. To order, say: 'Quiero una empanada, por favor.'";
+                    } else if (userMsg.includes("hola") || userMsg.includes("que tal")) {
+                        response = "¡Hola! A real Chilean would say: '¿Cómo estai?' notice we use 'i' instead of 'as' at the end!";
+                    } else if (userMsg.includes("que pedo")) {
+                        response = "Haha, that's very Mexican! In Chile, if something is crazy or weird, we say '¡Qué onda!' or '¡Qué volá!'";
+                    } else if (userMsg.includes("gracias")) {
+                        response = "¡De nada! (You're welcome). You're getting better already!";
+                    }
+
+                    setMessages(prev => [...prev, { role: 'ai', text: response }]);
+                    speak(response.split('.')[0]); // Speak the first sentence
+                }, 800);
             };
 
             return (
                 <div className="max-w-md mx-auto min-h-screen bg-white flex flex-col shadow-2xl relative">
-                    {/* Header */}
-                    <header className="p-6 bg-white border-b sticky top-0 z-20 flex justify-between items-center">
+                    <header className="p-6 bg-white border-b flex justify-between items-center">
                         <div className="flex items-center space-x-2">
-                            <div className="w-10 h-10 chile-gradient rounded-xl flex items-center justify-center text-white font-black italic">H</div>
-                            <h1 className="text-xl font-extrabold text-slate-800">HablaSA</h1>
+                            <div className="w-10 h-10 chile-gradient rounded-xl flex items-center justify-center text-white font-black italic">V</div>
+                            <div>
+                                <h1 className="text-lg font-extrabold text-slate-800 leading-none">Valentina AI</h1>
+                                <span className="text-[10px] text-green-500 font-bold uppercase tracking-widest">Online Now</span>
+                            </div>
                         </div>
-                        <div className="font-bold text-blue-600">💎 {xp} XP</div>
                     </header>
 
-                    <main className="flex-1 overflow-y-auto pb-24 p-6">
-                        {tab === 'home' && (
-                            <div className="space-y-6">
-                                <div className="bg-slate-900 rounded-3xl p-6 text-white shadow-xl">
-                                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Target: Jan 2027</p>
-                                    <h2 className="text-2xl font-bold mb-4">Fluency Roadmap</h2>
-                                    <div className="w-full bg-slate-800 rounded-full h-2 mb-2">
-                                        <div className="bg-blue-500 h-2 rounded-full" style={{width: `${Math.min(xp/10, 100)}%`}}></div>
-                                    </div>
-                                    <p className="text-xs text-slate-400 font-medium">Listening: <span className="text-green-400 font-bold underline">Enabled 🔊</span></p>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    <h3 className="font-bold text-slate-800">Daily Missions</h3>
-                                    <button onClick={() => setTab('cards')} className="w-full p-4 border rounded-2xl flex items-center space-x-4 active:bg-slate-50 text-left">
-                                        <div className="text-2xl">🔊</div>
-                                        <div>
-                                            <h4 className="font-bold">Pronunciation Practice</h4>
-                                            <p className="text-xs text-slate-500">Listen and repeat Chilean modismos</p>
-                                        </div>
-                                    </button>
+                    <main className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
+                        {messages.map((m, i) => (
+                            <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-[80%] p-4 shadow-sm text-sm ${m.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-ai text-slate-700'}`}>
+                                    {m.text}
                                 </div>
                             </div>
-                        )}
-
-                        {tab === 'cards' && (
-                            <div className="flex flex-col h-full space-y-6 text-center">
-                                <div className="flex justify-center">
-                                    <button 
-                                        onClick={() => speak("¿Cachai?")}
-                                        className="bg-blue-100 text-blue-600 px-4 py-2 rounded-full text-sm font-bold flex items-center space-x-2 active:active-scale"
-                                    >
-                                        <i className="fas fa-volume-up"></i>
-                                        <span>Listen to Pronunciation</span>
-                                    </button>
-                                </div>
-
-                                <div 
-                                    onClick={() => setShowBack(!showBack)}
-                                    className={`w-full aspect-[4/5] rounded-[2.5rem] p-10 flex flex-col items-center justify-center shadow-2xl transition-all duration-500 ${showBack ? 'bg-blue-600 text-white' : 'bg-white border-4 border-slate-50 text-slate-800'}`}
-                                >
-                                    {!showBack ? (
-                                        <h3 className="text-5xl font-black italic">¿Cachai?</h3>
-                                    ) : (
-                                        <>
-                                            <h3 className="text-3xl font-bold mb-2 text-blue-200">Meaning</h3>
-                                            <p className="text-2xl">"You know?"</p>
-                                            <button 
-                                                onClick={(e) => { e.stopPropagation(); speak("Es súper difícil, ¿cachai?"); }}
-                                                className="mt-6 text-xs bg-blue-500/30 p-2 rounded-lg italic underline"
-                                            >
-                                                🔊 Example: "Es súper difícil, ¿cachai?"
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                                <button onClick={() => {setXp(xp + 10); setShowBack(false)}} className="bg-green-500 text-white py-4 rounded-2xl font-bold shadow-lg">Next Card</button>
-                            </div>
-                        )}
-
-                        {tab === 'chat' && (
-                            <div className="flex flex-col h-full space-y-4">
-                                <div className="bg-slate-100 p-4 rounded-2xl rounded-bl-none text-sm text-slate-700 relative">
-                                    <b>Valentina 🇨🇱:</b> ¡Hola! ¿Cómo estai? Soy tu profe chilena.
-                                    <button onClick={() => speak("¡Hola! ¿Cómo estai? Soy tu profe chilena.")} className="absolute -top-2 -right-2 bg-white shadow-md w-8 h-8 rounded-full text-blue-500 flex items-center justify-center">
-                                        <i className="fas fa-volume-up text-xs"></i>
-                                    </button>
-                                </div>
-                                <div className="flex-1"></div>
-                                <div className="flex space-x-2 p-2">
-                                    <input placeholder="Type here..." className="flex-1 border p-4 rounded-2xl outline-none" />
-                                    <button className="bg-blue-600 text-white px-6 rounded-2xl"><i className="fas fa-paper-plane"></i></button>
-                                </div>
-                            </div>
-                        )}
+                        ))}
                     </main>
 
+                    <div className="p-4 bg-white border-t sticky bottom-20">
+                        <div className="flex space-x-2">
+                            <input 
+                                value={input}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                                placeholder="Ask Valentina anything..." 
+                                className="flex-1 border-2 border-slate-100 p-4 rounded-2xl outline-none focus:border-blue-500 transition-all"
+                            />
+                            <button onClick={handleSend} className="bg-blue-600 text-white w-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-transform">
+                                <i className="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+
                     <nav className="fixed bottom-0 w-full max-w-md bg-white border-t flex justify-around items-center h-20 pb-4">
-                        <button onClick={() => setTab('home')} className={`flex flex-col items-center ${tab === 'home' ? 'text-blue-600' : 'text-slate-400'}`}>
+                        <button onClick={() => setTab('home')} className="text-slate-400 flex flex-col items-center">
                             <i className="fas fa-home text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1 uppercase">Home</span>
+                            <span className="text-[10px] font-bold mt-1">HOME</span>
                         </button>
-                        <button onClick={() => setTab('cards')} className={`flex flex-col items-center ${tab === 'cards' ? 'text-blue-600' : 'text-slate-400'}`}>
-                            <i className="fas fa-clone text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1 uppercase">Practice</span>
-                        </button>
-                        <button onClick={() => setTab('chat')} className={`flex flex-col items-center ${tab === 'chat' ? 'text-blue-600' : 'text-slate-400'}`}>
-                            <i className="fas fa-comment-dots text-xl"></i>
-                            <span className="text-[10px] font-bold mt-1 uppercase">Tutor</span>
+                        <button onClick={() => setTab('chat')} className="text-blue-600 flex flex-col items-center">
+                            <i className="fas fa-robot text-xl"></i>
+                            <span className="text-[10px] font-bold mt-1">AI TUTOR</span>
                         </button>
                     </nav>
                 </div>
